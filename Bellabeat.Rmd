@@ -1,0 +1,273 @@
+---
+title: "Bellabeat project"
+author: "Hao Tran"
+date: '2022-05-28'
+output: html_document
+---
+Case Study 2: How can a wellness company play it smart?
+
+In this case study, I will perform data analysis for Bellabeat, a high-tech manufacturer of health-focused products for women. I will analyze smart device data to gain insight into how consumers are using their smart devices. This analysis will help guide future marketing strategies for Bellabeat's team.
+
+**Insights:** The high relation between TotalSteps and TotalDistance exposes that the users of the smart health trackers are usually running or jogging much more than using bicycles or cars. This means the customer segment that Bellabeat should focus on is the people who use running/walking as a way of commutting. This is also to say, the potential customers can be those who run and walk as a way of working out.
+
+After analyzing the Fitbit dataset, I have discovered the general insights towards the use of smart device of Fitbit's customers:
+
+* We  expect that people who use the smart devices partially have concerned about their health. And they have, through inspecting their own health ratios. However, from the data analysis, haft of them, on average in a month, had not had enough time for activities per day. When it comes to sleeping, the significant portion of the valid users (whose information recorded is greater than 14 days) sleep for at least 7 hours a day on average, which means there is a small number of customers did not sleep enough.
+* The customers prefer running/walking as a way to travel than using by bikes, cars, or other vehicles. 
+
+### Installing and loading the essential packages 
+
+```{r installing packages}
+install.packages('tidyverse')
+install.packages('reshape2')
+library(reshape2)
+library(tidyverse)
+library(lubridate)
+```
+
+### Loading CSV files
+The project is conducted on two dataset: dailyActivity and sleepDay 
+
+```{r loading files}
+daily_activity <- read.csv("dailyActivity_merged.csv")
+sleep_day <- read.csv("sleepDay_merged.csv")
+```
+
+### Exploring a few key tables
+#### Take a look at the daily_activity data.
+
+```{r}
+glimpse(daily_activity)
+```
+
+* Remove the duplicates
+
+```{r}
+daily_activity <- unique(daily_activity)
+```
+
+* Formatting data
+We will transform ActivityDate from Character to Date
+
+```{r}
+daily_activity$ActivityDate <- as.Date(mdy(daily_activity$ActivityDate))
+is.Date(daily_activity$ActivityDate)
+```
+
+Now, ActivityDate is in Date.
+Create a column which is the total time for VeryActiveMinutes and FairyActiveMinutes
+
+```{r adding TotalMinutes}
+daily_activity$TotalActiveMinutes <- daily_activity$VeryActiveMinutes + daily_activity$FairlyActiveMinutes
+head(daily_activity)
+```
+
+* Take a look at the statistical summary of daily_activity.
+
+```{r stat summary daily}
+daily_activity %>% 
+  select(-c(Id, ActivityDate, LoggedActivitiesDistance)) %>% 
+  summary()
+```
+
+* Let see how users spend their time for physical activities
+In the table, we can see that the numbers of date recorded for each user are not similar, many of them are recorded in a very short time. I recommend to only consider the users that have information for around 1 month which are greater that 27 days.
+At first, we create the data frame includes information of date and the average total time
+
+```{r}
+Sub_daily_activity <- daily_activity %>%
+  group_by(Id) %>%
+  select(c(Id, ActivityDate, TotalActiveMinutes)) %>% 
+  mutate(Avg_activity_minutes = mean(TotalActiveMinutes))
+```
+
+We are going to figure out the users that have enough data recorded. Then, for these users, let see how many of them are fairly and very active in at least 30 mins per day on average. 
+
+```{r}
+Number_date_recorded <- as.data.frame(table(Sub_daily_activity$Id)) %>% 
+  filter(Freq > 27) 
+length(Number_date_recorded$Var1)
+```
+
+There are 27 users that use the smart devices for about a month.
+
+```{r}
+Longer_than_30mins <- Sub_daily_activity %>% 
+  filter(Id %in% Number_date_recorded$Var1) %>% 
+  filter(Avg_activity_minutes > 30) 
+length(unique(Longer_than_30mins$Id))
+```
+
+There are 14 (out of) users are the faily and very active at least 30 mins a day on average.   
+
+* Data normalization
+TotalSteps column has the large range of values than other variables. So we need to center it. At this point, I use the Min-Max normalization method.
+
+```{r normalization}
+daily_activity_normalized <- daily_activity  %>% 
+ select(c(Id, ActivityDate, TotalDistance, VeryActiveDistance,  ModeratelyActiveDistance, LightActiveDistance, SedentaryActiveDistance,TotalActiveMinutes, VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes, SedentaryMinutes, Calories))
+daily_activity_normalized$TotalSteps <- (daily_activity$TotalSteps - min(daily_activity$TotalSteps)) / (max(daily_activity$TotalSteps)- min(daily_activity$TotalSteps))
+```
+
+#### Take a look at the Sleep_day date.
+
+```{r}
+glimpse(sleep_day)
+```
+
+* Remove duplicates
+
+```{r}
+sleep_day <- unique(sleep_day)
+```
+
+* Formatting data
+We transform SleepDate from Character to Date. Then, change TotalSleepRecords from integer to factor
+
+```{r}
+sleep_day$SleepDay <- as.Date(mdy_hms(sleep_day$SleepDay))
+sleep_day$TotalSleepRecords <- as.factor(sleep_day$TotalSleepRecords)
+is.Date(sleep_day$SleepDay)
+```
+
+* Take a look at the statistical summary of sleep_day.
+
+```{r stat summary sleep}
+sleep_day %>% 
+  select(-c(Id, SleepDay)) %>% 
+  summary()
+```
+FitBit's Customers usualy sleep for 419 mins (equivalent to approximately 7 hours a day)
+
+Similar to Daily_actitity, we inspect the time for sleeping of the users using the Fitbit. However, because of the lack of observations, we will use the information of customer whose sleep recorded in at least 2 weeks.
+
+```{r}
+Sub_sleep_day <- sleep_day %>%
+  group_by(Id) %>%
+  select(c(Id, SleepDay,TotalMinutesAsleep)) %>% 
+  mutate(Avg_Asleep_minutes = mean(TotalMinutesAsleep))
+```
+
+Filter out the users did not commit for a month
+
+```{r}
+Number_date_recorded1 <- as.data.frame(table(Sub_sleep_day$Id)) %>% 
+  filter(Freq >= 14)
+length(unique(Number_date_recorded1$Var1))
+```
+
+Let see how many users slept for at least 7 hours on average
+
+```{r}
+At_least_7hours <- Sub_sleep_day %>% 
+  filter(Id %in% Number_date_recorded1$Var1) %>% 
+  filter(Avg_Asleep_minutes >= 420) 
+length(unique(At_least_7hours$Id))
+```
+
+There are 11 out of 15 people that slept at least 7 hours per day on average in during 2 weeks. 
+
+#### Merge daily_activity and sleep_day to inspect the relationship between variables from to tables
+
+```{r merging}
+combined_data <- merge(daily_activity_normalized, sleep_day, by = "Id")
+head(combined_data)
+```
+
+Across the combined_data, **TotalDistance** is the sum of **VeryActiveDistance**, **ModeratelyActiveDistance, LightActiveDistance**, and **TotalActiveMinites** is the sum of **VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes**, we will not consider the relationship of the elements and their sum silmutaneously. Instead, we split the merged data into 2 plots.
+
+#### Plotting 1 includes the sum and other variables
+
+```{r plotting 1}
+combined_data1 <- combined_data %>% 
+  select(-c(Id,ActivityDate, SleepDay, VeryActiveDistance, ModeratelyActiveDistance, LightActiveDistance, VeryActiveMinutes, FairlyActiveMinutes,TotalSleepRecords))
+head(combined_data1)
+```
+
+We calculate the correlation coefficients
+
+```{r cor. coef. 1}
+correlation1<- cor(combined_data1)
+```
+
+Visualize with a heatmap
+
+```{r heatmap 1}
+heatmap1 <- melt(correlation1)
+head(heatmap1)
+ggplot(data = heatmap1, aes(x= Var1, y=Var2, fill = value)) + 
+  geom_tile(color="white") +
+  scale_fill_gradient2(low = "blue",high= "red", mid = "white", midpoint = 0) + 
+  theme(axis.text.x = element_text(angle = 45,vjust = 1, hjust = 1), 
+        axis.title.x = element_blank(), axis.title.y = element_blank())+
+  labs(fill = 'Correlation values') + geom_text(aes(label= round(value,2)), 
+                                                color = 'black', size= 3)
+```
+
+From the heatmap, some relations should be considered significant (higher or approximately to 0.8)
+
+**TotalSteps** and **TotalDistance**
+
+```{r}
+ggplot(data=combined_data1) + geom_point(mapping = aes(x=TotalSteps,y= TotalDistance))+   annotate("text", 2.5,15,label=paste0("Cor=",round(cor(combined_data1$TotalSteps,combined_data1$TotalDistance),2))) + ylim(0,20) + xlim(0,3)
+```
+
+**TotalTimeInBed** and **TotalMinutesAsleep**
+
+```{r}
+ggplot(data=combined_data1) + geom_point(mapping = aes(x=TotalTimeInBed,y= TotalMinutesAsleep)) + 
+  annotate("text", 250,700,label=paste0("Cor=",round(cor(combined_data1$TotalTimeInBed,combined_data1$TotalMinutesAsleep),2))) + ylim(0,850) + xlim(0,1200)
+```
+
+#### Plotting 2 includes the elements of the sum and other variables
+
+```{r plotting 2}
+combined_data2 <- combined_data %>% 
+  select(-c(Id,ActivityDate, SleepDay,TotalSleepRecords, TotalDistance,TotalActiveMinutes))
+head(combined_data2)
+```
+
+We calculate the correlation coefficients for this table
+
+```{r cor. coef. 2}
+correlation2 <- cor(combined_data2)
+```
+
+Visualize with heatmap
+
+```{r heatmap 2}
+heatmap2 <- melt(correlation2)
+head(heatmap2)
+ggplot(data = heatmap2, aes(x= Var1, y=Var2, fill = value)) + geom_tile(color="white")+
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) + theme(axis.text.x = element_text(angle = 45,vjust = 1, hjust = 1),axis.title.x = element_blank(), axis.title.y = element_blank()) + labs(fill = 'Correlation values') + geom_text(aes(label= round(value,2)),color = 'black', size= 3)
+```
+
+Some relations should be considered significant (higher or approximately to 0.8)
+
+**VeryActiveMinutes** and **VeryActiveDistance**
+
+```{r}
+ggplot(data=combined_data2) + geom_point(mapping = aes(x=VeryActiveMinutes,y=VeryActiveDistance)) + 
+  annotate("text", 200,40,label=paste0("Cor=",round(cor(combined_data2$VeryActiveMinutes,combined_data2$VeryActiveDistance),2))) + ylim(0,50) + xlim(0,250)
+```
+
+**ModeratelyActiveDistance** and **FairlyActiveMinutes** 
+
+```{r}
+ggplot(data=combined_data2) + geom_point(mapping = aes(x=ModeratelyActiveDistance,y=FairlyActiveMinutes)) + 
+  annotate("text", 30,150,label=paste0("Cor=",round(cor(combined_data2$ModeratelyActiveDistance,combined_data2$FairlyActiveMinutes),2))) + ylim(0,200) + xlim(0,40)
+```
+
+**LightActiveDistance** and **LightActiveDistance**
+
+```{r}
+ggplot(data=combined_data2) + geom_point(mapping = aes(x=LightlyActiveMinutes,y=LightActiveDistance)) + 
+  annotate("text", 500,25,label=paste0("Cor=",round(cor(combined_data2$Lightly,combined_data2$LightActiveDistance),2))) + ylim(0,30) + xlim(0,600)
+```
+
+### Acts should be taken
+#### The data analysis below gives some suggestions on how Bellabeat can develop their products. 
+The high relation between Total Steps and Total Distance can help the marketing know more about the users of smart devices. this finding lead to a new opportunity of a customer segment.  They should focus on the customer that usually travel by foot or other ones who often run or jog. 
+Also, the people who are supposed to be live in a healthy way actually have some problems with the total time for physical activities and sleeping. The teams backing for Bellabeat app should pay their effort on solving these problems for the future users.
+Finally, more research should be taken further to explore more knowledge of this data and the answer the questions around the high degree of relation between levels of minute and distance, between total time asleep and total time in bed.
+
