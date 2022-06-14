@@ -4,7 +4,13 @@ This project is completed under the umbrella of Google Data Analytics Professtio
 As a newbie in data analysis field, it took me a certain amount of time to get familiar with the data analysis process and the use programming languages (which is R in this project). By trials and errors, at some senses, this project was finally completed. However, this is not comprehensive and it needs to be developed.
 
 In this case study, I will perform data analysis for Bellabeat, a high-tech manufacturer of health-focused products for women. I will analyze smart device data to gain insight into how consumers are using their smart devices. My analysis will help guide future marketing strategies for Bellabeat's team. 
+## Key findings
+* We  expect that people who use the smart devices partially have concerned about their health. And they have, through inspecting their own health ratios. However, from the data analysis, haft of them, on average in a month, had not had enough time for activities per day. When it comes to sleeping, the significant portion of the valid users (whose information recorded is greater than 14 days) sleep for at least 7 hours a day on average, which means there is a small number of customers did not sleep enough.
+* The customers prefer running/walking as a way to travel than using by bikes, cars, or other vehicles.
 
+So what?
+
+From the findings, I recommend the marketing team should
 ## Installation
 ``` 
 install.packages('tidyverse')
