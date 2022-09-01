@@ -1,6 +1,6 @@
 # Bellabeat project: How can a wellness company play it smart?
 
-(The result file was saved in PDF and HTML file, please find the one which is more convenient to read)
+(The result file was saved in PDF and HTML file, please download the one which is more convenient to read)
 This project is completed under the umbrella of Google Data Analytics Professtional Certificate. 
 As a newbie in data analysis field, it took me a certain amount of time to get familiar with the data analysis process and the use programming languages (which is R in this project). By trials and errors, at some senses, this project was finally completed. However, this is not comprehensive and it needs to be developed.
 
